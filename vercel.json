@@ -1,0 +1,9 @@
+{
+  "framework": "nextjs",
+  "crons": [
+    {
+      "path": "/api/internal/jobs/expire-pre-reservations",
+      "schedule": "*/10 * * * *"
+    }
+  ]
+}

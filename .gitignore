@@ -1,0 +1,22 @@
+# dependencies
+/node_modules
+
+# next
+/.next/
+/out/
+
+# local settings and credentials
+.env*
+!.env.example
+/.insforge/
+
+# test/build output
+/coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# platform
+.vercel
+.DS_Store
+npm-debug.log*
+pnpm-debug.log*
