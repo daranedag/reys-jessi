@@ -42,12 +42,14 @@ Configura la clave pública, la clave privada y el URL endpoint. La clave privad
 
 ## 5. Vercel y DNS
 
-Importa el repositorio como un proyecto Next.js en un plan Pro y agrega ambos dominios al mismo proyecto:
+Importa el repositorio como un proyecto Next.js. Puedes usar Hobby para probar el sitio. Cuando configures los dominios, agrega ambos al mismo proyecto:
 
 - `nombredelsitio.cl`
 - `admin.nombredelsitio.cl`
 
-Crea los registros DNS que Vercel indique y reemplaza `nombredelsitio.cl` en las variables de entorno. El cron incluido libera pre-reservas vencidas cada 10 minutos.
+Crea los registros DNS que Vercel indique y reemplaza `nombredelsitio.cl` en las variables de entorno.
+
+Durante la prueba en Hobby, la limpieza automática de pre-reservas está desactivada. Una hora retenida en Cal.com puede seguir bloqueada después de vencer el plazo de pago. Antes de recibir reservas reales, programa una llamada a `/api/internal/jobs/expire-pre-reservations` cada 10 minutos (`*/10 * * * *`), mediante Vercel Pro o un programador externo. El endpoint requiere el encabezado `Authorization: Bearer` con el valor de `CRON_SECRET`.
 
 ## 6. Verificación previa a producción
 
