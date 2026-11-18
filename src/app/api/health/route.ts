@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
-import { env, isInsforgeAdminConfigured } from "@/lib/env";
+import { env, isAdminAuthConfigured } from "@/lib/env";
 
 export function GET() {
   return NextResponse.json({
     ok: true,
     integrations: {
-      insforge: isInsforgeAdminConfigured(),
+      neon: Boolean(env.databaseUrl),
+      neonAuth: isAdminAuthConfigured(),
       calcom: Boolean(env.calApiKey),
       mercadoPago: Boolean(env.mercadoPagoAccessToken),
       imageKit: Boolean(env.imageKitPrivateKey && env.imageKitPublicKey),

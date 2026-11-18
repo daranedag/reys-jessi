@@ -1,13 +1,12 @@
 import { saveHeroAction } from "./actions";
 import { PageHeading } from "@/components/admin/page-heading";
 import { defaultContent } from "@/lib/content/defaults";
-import { createInsforgeServerClient } from "@/lib/insforge/server";
+import { getHeroSettings } from "@/lib/content/repository";
 import { requireAdminSession } from "@/lib/admin/session";
 
 export default async function ContentPage() {
   await requireAdminSession();
-  const client = await createInsforgeServerClient();
-  const { data } = await client.database.from("site_settings").select().eq("id", "main").maybeSingle();
+  const data = await getHeroSettings();
   const hero = {
     eyebrow: data?.hero_eyebrow ?? defaultContent.hero.eyebrow,
     title: data?.hero_title ?? defaultContent.hero.title,
@@ -16,7 +15,7 @@ export default async function ContentPage() {
     imageUrl: data?.hero_image_url ?? defaultContent.hero.imageUrl,
   };
 
-  const collections = ["Cronología", "Cursos", "Nociones", "Experiencias", "Tratamientos", "Testimonios", "Reflexiones"];
+  const collections = ["Cronología", "Formación", "Nociones", "Experiencias", "Enfoque facial", "En primera persona", "Reflexiones"];
   return (
     <div>
       <PageHeading description="Edita los textos e imágenes sin modificar el código del sitio." title="Contenido" />

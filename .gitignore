@@ -20,3 +20,24 @@ next-env.d.ts
 .DS_Store
 npm-debug.log*
 pnpm-debug.log*
+
+transcripciones.txt
+# InsForge & AI agent skills
+.insforge
+.agent
+.agents
+.augment
+.claude
+.cline
+.github/copilot*
+.kilocode
+.qoder
+.qwen
+.roo
+.trae
+.windsurf
+
+# Local database backups can contain personal data
+/migrations/source/*.sql
+/*.sql.gz
+/.neon/

@@ -10,14 +10,17 @@ export const env = {
   get adminHost() {
     return read("ADMIN_HOST") ?? "admin.localhost:3000";
   },
-  get insforgeBaseUrl() {
-    return read("NEXT_PUBLIC_INSFORGE_BASE_URL");
+  get databaseUrl() {
+    return read("DATABASE_URL");
   },
-  get insforgeAnonKey() {
-    return read("NEXT_PUBLIC_INSFORGE_ANON_KEY");
+  get neonAuthBaseUrl() {
+    return read("NEON_AUTH_BASE_URL");
   },
-  get insforgeApiKey() {
-    return read("INSFORGE_API_KEY");
+  get neonAuthCookieSecret() {
+    return read("NEON_AUTH_COOKIE_SECRET");
+  },
+  get adminEmail() {
+    return read("ADMIN_EMAIL")?.toLowerCase();
   },
   get calApiKey() {
     return read("CAL_API_KEY");
@@ -54,12 +57,8 @@ export const env = {
   },
 };
 
-export function isInsforgePublicConfigured() {
-  return Boolean(env.insforgeBaseUrl && env.insforgeAnonKey);
-}
-
-export function isInsforgeAdminConfigured() {
-  return Boolean(env.insforgeBaseUrl && env.insforgeApiKey);
+export function isAdminAuthConfigured() {
+  return Boolean(env.databaseUrl && env.neonAuthBaseUrl && (env.neonAuthCookieSecret?.length ?? 0) >= 32);
 }
 
 export function requireValue(value: string | undefined, label: string): string {

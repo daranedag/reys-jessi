@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdminSession } from "@/lib/admin/session";
-import { createInsforgeServerClient } from "@/lib/insforge/server";
+import { sql } from "@/lib/db";
 
 const serviceSchema = z.object({
   id: z.string().uuid().optional(),
@@ -25,22 +25,16 @@ export async function saveServiceAction(formData: FormData) {
     price: formData.get("price"),
     calEventTypeId: formData.get("calEventTypeId"),
   });
-  const client = await createInsforgeServerClient();
-  const row = {
-    name: values.name,
-    description: values.description || null,
-    duration_minutes: values.duration,
-    price_amount: values.price,
-    currency: "CLP",
-    cal_event_type_id: values.calEventTypeId,
-    active: true,
-    updated_at: new Date().toISOString(),
-  };
-  const query = values.id
-    ? client.database.from("services").update(row).eq("id", values.id)
-    : client.database.from("services").insert([row]);
-  const { error } = await query;
-  if (error) throw error;
+  const { id, name, description, duration, price, calEventTypeId } = values;
+  if (id) {
+    await sql`UPDATE public.reys_services SET name = ${name}, description = ${description || null},
+      duration_minutes = ${duration}, price_amount = ${price}, currency = 'CLP',
+      cal_event_type_id = ${calEventTypeId}, active = true WHERE id = ${id}`;
+  } else {
+    await sql`INSERT INTO public.reys_services
+      (name, description, duration_minutes, price_amount, cal_event_type_id)
+      VALUES (${name}, ${description || null}, ${duration}, ${price}, ${calEventTypeId})`;
+  }
   revalidatePath("/");
   revalidatePath("/admin/services");
 }

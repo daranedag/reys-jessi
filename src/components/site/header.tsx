@@ -4,8 +4,8 @@ import Link from "next/link";
 const links = [
   ["Camino", "#cronologia"],
   ["Formación", "#cursos"],
-  ["Tratamientos", "#rejuvenecimiento"],
-  ["Testimonios", "#testimonios"],
+  ["Enfoque", "#rejuvenecimiento"],
+  ["En primera persona", "#testimonios"],
 ] as const;
 
 export function Header() {

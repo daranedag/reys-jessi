@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20.11.0",
+    "node": ">=20.19.0",
     "pnpm": ">=9.0.0"
   },
   "scripts": {
@@ -16,7 +16,8 @@
   },
   "dependencies": {
     "@imagekit/nodejs": "^7.9.1",
-    "@insforge/sdk": "^1.4.3",
+    "@neon/auth": "^0.8.2",
+    "@neondatabase/serverless": "^1.2.1",
     "mercadopago": "^2.3.0",
     "next": "16.3.4",
     "react": "19.3.0",

@@ -1,16 +1,14 @@
 import { PageHeading } from "@/components/admin/page-heading";
-import { createInsforgeServerClient } from "@/lib/insforge/server";
+import { sql } from "@/lib/db";
+import type { PreReservationRow } from "@/lib/reservations/repository";
 import { requireAdminSession } from "@/lib/admin/session";
 
 export default async function ReservationsPage() {
   await requireAdminSession();
-  const client = await createInsforgeServerClient();
-  const { data } = await client.database
-    .from("pre_reservations")
-    .select("id,client_name,client_email,starts_at,status,cal_booking_uid,created_at")
-    .order("created_at", { ascending: false })
-    .limit(50);
-  const reservations = data ?? [];
+  const reservations = await sql<Pick<PreReservationRow, "id" | "client_name" | "client_email" | "starts_at" | "status" | "cal_booking_uid">>`
+    SELECT id, client_name, client_email, starts_at, status, cal_booking_uid
+    FROM public.reys_pre_reservations ORDER BY created_at DESC LIMIT 50
+  `;
   return (
     <div>
       <PageHeading description="Seguimiento conjunto de la hora de Cal.com y el estado del pago." title="Reservas" />

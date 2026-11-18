@@ -18,11 +18,11 @@ const sans = Montserrat({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
   title: {
-    default: "Jessica Quiróz | Tu guía hacia el interior",
+    default: "Jessica Quiróz | Rejuvenecimiento facial",
     template: "%s | Jessica Quiróz",
   },
   description:
-    "Sanación energética, rejuvenecimiento facial y corporal. Sesiones personalizadas para transformar tu bienestar desde el interior.",
+    "Rejuvenecimiento facial y bienestar integral en Santiago de Chile, desde una mirada que integra el rostro, la experiencia y la escucha personalizada.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -1,22 +1,21 @@
 # Puesta en marcha
 
-## 1. InsForge
+## 1. Neon Postgres y Neon Auth
 
-El repositorio está vinculado al proyecto existente `jessiquiroz`. Actualmente el servicio está pausado, por lo que las migraciones no se deben aplicar hasta reactivarlo.
+El proyecto es `reys-jessi`, rama `production`, base `neondb`. La restauración del respaldo del 9 de noviembre está documentada en [Migraciones](../migrations/README.md).
 
-Después de reactivarlo:
+Configura estas variables de producción en Vercel:
 
-1. Revisa el historial remoto con `npx -y @insforge/cli db migrations list`.
-2. Aplica todas las migraciones pendientes con `npx -y @insforge/cli db migrations up --all`.
-3. Crea la cuenta que administrará el sitio en InsForge Auth.
-4. Inserta su UUID como primer propietario usando una sesión administrativa:
+| Variable | Valor |
+| --- | --- |
+| `DATABASE_URL` | URL privada de Neon del rol de aplicación `reys_app`. |
+| `NEON_AUTH_BASE_URL` | URL de Neon Auth de la rama. |
+| `NEON_AUTH_COOKIE_SECRET` | Secreto aleatorio de al menos 32 caracteres. |
+| `ADMIN_EMAIL` | Correo de la primera cuenta administrativa. |
 
-```sql
-INSERT INTO public.admin_profiles(user_id, display_name, role)
-VALUES ('UUID_DEL_USUARIO', 'Jessica Quiróz', 'owner');
-```
+El SQL de [permisos del rol](../migrations/neon/20261118141500_app_role.sql) crea `reys_app` sin acceso de inicio de sesión. Ejecútalo como propietario de la base. En `psql`, usa `\password reys_app` para fijar la contraseña sin dejarla en el historial. Después ejecuta `ALTER ROLE reys_app LOGIN;` y guarda la URL de ese rol como `DATABASE_URL` sensible en Vercel.
 
-No se incluyó un UUID ficticio en las migraciones para evitar otorgar permisos a la cuenta equivocada.
+En Neon Auth, usa verificación de correo por código al registrarse y al iniciar sesión con una cuenta sin verificar. Configura el proveedor SMTP de producción y registra el origen definitivo del panel como dominio de confianza. Para registrar al primer propietario, abre la pantalla de acceso, usa el correo de `ADMIN_EMAIL`, elige tu contraseña y pulsa **Crear mi cuenta administrativa**. Tras verificar el código e iniciar sesión, la aplicación vincula la identidad y crea el perfil `owner`. Otros perfiles deben estar registrados en `reys_admin_profiles`.
 
 ## 2. Cal.com Cloud
 
@@ -57,4 +56,4 @@ Crea los registros DNS que Vercel indique y reemplaza `nombredelsitio.cl` en las
 - Reenvía el mismo webhook y confirma que no duplique reservas.
 - Cancela y reprograma en Cal.com y confirma la sincronización del panel.
 - Sube seis imágenes y verifica que ninguna atraviese el BFF.
-- Comprueba que una cuenta sin `admin_profiles` no pueda abrir ni modificar el panel.
+- Comprueba que una cuenta sin `reys_admin_profiles` no pueda abrir ni modificar el panel.

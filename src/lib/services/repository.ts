@@ -1,33 +1,27 @@
 import "server-only";
+import { sql } from "@/lib/db";
 import type { Service } from "@/lib/domain";
-import { isInsforgeAdminConfigured } from "@/lib/env";
-import { createInsforgeAdminClient } from "@/lib/insforge/admin";
+import { env } from "@/lib/env";
 
-export async function getActiveServices(): Promise<Service[]> {
-  if (!isInsforgeAdminConfigured()) return [];
-
-  const client = createInsforgeAdminClient();
-  const { data, error } = await client.database
-    .from("services")
-    .select("id,name,description,duration_minutes,price_amount,currency,active,cal_event_type_id")
-    .eq("active", true)
-    .order("name");
-
-  if (error) throw error;
-  return (data ?? []) as Service[];
+export async function getServices(activeOnly = true): Promise<Service[]> {
+  if (!env.databaseUrl) return [];
+  return sql<Service>`
+    SELECT id, name, description, duration_minutes, price_amount::float8, currency,
+           active, cal_event_type_id::float8
+    FROM public.reys_services WHERE (${activeOnly} = false OR active) ORDER BY name
+  `;
 }
 
-export async function getService(serviceId: string): Promise<Service | null> {
-  if (!isInsforgeAdminConfigured()) return null;
+export function getActiveServices() {
+  return getServices();
+}
 
-  const client = createInsforgeAdminClient();
-  const { data, error } = await client.database
-    .from("services")
-    .select("id,name,description,duration_minutes,price_amount,currency,active,cal_event_type_id")
-    .eq("id", serviceId)
-    .eq("active", true)
-    .maybeSingle();
-
-  if (error) throw error;
-  return (data as Service | null) ?? null;
+export async function getService(serviceId: string, activeOnly = true): Promise<Service | null> {
+  if (!env.databaseUrl) return null;
+  const [service] = await sql<Service>`
+    SELECT id, name, description, duration_minutes, price_amount::float8, currency,
+           active, cal_event_type_id::float8
+    FROM public.reys_services WHERE id = ${serviceId} AND (${activeOnly} = false OR active)
+  `;
+  return service ?? null;
 }

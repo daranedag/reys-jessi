@@ -1,12 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { LoginForm } from "./login-form";
-import { isInsforgePublicConfigured } from "@/lib/env";
+import { canCreateFirstAdmin } from "@/lib/admin/session";
+import { isAdminAuthConfigured } from "@/lib/env";
 
 export const metadata = { title: "Acceso al panel" };
 
-export default function AdminLoginPage() {
-  const configured = isInsforgePublicConfigured();
+export const dynamic = "force-dynamic";
+
+export default async function AdminLoginPage() {
+  const configured = isAdminAuthConfigured();
+  const canRegister = configured && await canCreateFirstAdmin();
   return (
     <main className="grid min-h-screen place-items-center bg-[#f4f1f4] px-6 py-12">
       <section className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-soft sm:p-10">
@@ -18,10 +22,10 @@ export default function AdminLoginPage() {
         <p className="mt-2 text-sm leading-6 text-slate-600">Administra el contenido, los servicios y las reservas desde un solo lugar.</p>
         {!configured ? (
           <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-            La pantalla está lista. Para iniciar sesión falta configurar las variables públicas de InsForge.
+            El acceso administrativo todavía está en configuración.
           </p>
         ) : null}
-        <LoginForm />
+        {configured ? <LoginForm canRegister={canRegister} /> : null}
       </section>
     </main>
   );

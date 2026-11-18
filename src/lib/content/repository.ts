@@ -1,11 +1,17 @@
 import "server-only";
 import { defaultContent } from "@/lib/content/defaults";
 import type { ContentCard, SiteContent } from "@/lib/domain";
-import { isInsforgeAdminConfigured } from "@/lib/env";
-import { createInsforgeAdminClient } from "@/lib/insforge/admin";
+import { env } from "@/lib/env";
+import { sql } from "@/lib/db";
 
 type Row = Record<string, unknown>;
-type AdminClient = ReturnType<typeof createInsforgeAdminClient>;
+type HeroSettings = {
+  hero_eyebrow: string;
+  hero_title: string;
+  hero_description: string;
+  hero_quote: string;
+  hero_image_url: string;
+};
 
 const stringValue = (value: unknown, fallback?: string) =>
   typeof value === "string" && value.trim() ? value : (fallback ?? "");
@@ -19,10 +25,12 @@ const toCard = (row: Row, fallback: ContentCard): ContentCard => ({
   badge: stringValue(row.badge ?? row.period ?? row.category, fallback.badge),
 });
 
-async function loadRows(client: AdminClient, table: string): Promise<Row[]> {
-  const { data, error } = await client.database.from(table).select().eq("published", true).order("sort_order");
-  if (error) throw error;
-  return (data ?? []) as Row[];
+export async function getHeroSettings() {
+  const [settings] = await sql<HeroSettings>`
+    SELECT hero_eyebrow, hero_title, hero_description, hero_quote, hero_image_url
+    FROM public.reys_site_settings WHERE id = 'main'
+  `;
+  return settings;
 }
 
 function mergeCards(rows: Row[], fallback: ContentCard[]) {
@@ -31,32 +39,28 @@ function mergeCards(rows: Row[], fallback: ContentCard[]) {
 }
 
 export async function getPublicContent(): Promise<SiteContent> {
-  if (!isInsforgeAdminConfigured()) return defaultContent;
+  if (!env.databaseUrl) return defaultContent;
 
   try {
-    const client = createInsforgeAdminClient();
-    const [settingsResult, timeline, training, notions, experiences, treatments, testimonials, reflections] =
+    const [settings, timeline, training, notions, experiences, treatments, testimonials, reflections] =
       await Promise.all([
-        client.database.from("site_settings").select().eq("id", "main").maybeSingle(),
-        loadRows(client, "timeline_items"),
-        loadRows(client, "courses"),
-        loadRows(client, "notions"),
-        loadRows(client, "experiences"),
-        loadRows(client, "treatments"),
-        loadRows(client, "testimonials"),
-        loadRows(client, "reflections"),
+        getHeroSettings(),
+        sql`SELECT * FROM public.reys_timeline_items WHERE published ORDER BY sort_order`,
+        sql`SELECT * FROM public.reys_courses WHERE published ORDER BY sort_order`,
+        sql`SELECT * FROM public.reys_notions WHERE published ORDER BY sort_order`,
+        sql`SELECT * FROM public.reys_experiences WHERE published ORDER BY sort_order`,
+        sql`SELECT * FROM public.reys_treatments WHERE published ORDER BY sort_order`,
+        sql`SELECT * FROM public.reys_testimonials WHERE published ORDER BY sort_order`,
+        sql`SELECT * FROM public.reys_reflections WHERE published ORDER BY sort_order`,
       ]);
-
-    if (settingsResult.error) throw settingsResult.error;
-    const settings = (settingsResult.data ?? {}) as Row;
 
     return {
       hero: {
-        eyebrow: stringValue(settings.hero_eyebrow, defaultContent.hero.eyebrow),
-        title: stringValue(settings.hero_title, defaultContent.hero.title),
-        description: stringValue(settings.hero_description, defaultContent.hero.description),
-        quote: stringValue(settings.hero_quote, defaultContent.hero.quote),
-        imageUrl: stringValue(settings.hero_image_url, defaultContent.hero.imageUrl),
+        eyebrow: stringValue(settings?.hero_eyebrow, defaultContent.hero.eyebrow),
+        title: stringValue(settings?.hero_title, defaultContent.hero.title),
+        description: stringValue(settings?.hero_description, defaultContent.hero.description),
+        quote: stringValue(settings?.hero_quote, defaultContent.hero.quote),
+        imageUrl: stringValue(settings?.hero_image_url, defaultContent.hero.imageUrl),
       },
       timeline: mergeCards(timeline, defaultContent.timeline),
       training: mergeCards(training, defaultContent.training),
@@ -77,7 +81,7 @@ export async function getPublicContent(): Promise<SiteContent> {
         : defaultContent.reflections,
     };
   } catch (error) {
-    console.error("No se pudo cargar el contenido de InsForge; se usa el contenido migrado.", error);
+    console.error("No se pudo cargar el contenido de Neon; se usa el contenido local.", error);
     return defaultContent;
   }
 }

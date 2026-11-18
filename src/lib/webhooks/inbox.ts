@@ -1,7 +1,5 @@
 import "server-only";
-import { createInsforgeAdminClient } from "@/lib/insforge/admin";
-
-type Claim = { id: string; should_process: boolean };
+import { sql } from "@/lib/db";
 
 export async function claimWebhook(input: {
   provider: "mercadopago" | "calcom";
@@ -9,34 +7,29 @@ export async function claimWebhook(input: {
   deliveryId?: string | null;
   payload: unknown;
 }) {
-  const client = createInsforgeAdminClient();
-  const { data, error } = await client.database.rpc("claim_webhook_event", {
-    p_provider: input.provider,
-    p_event_key: input.eventKey,
-    p_delivery_id: input.deliveryId ?? null,
-    p_payload: input.payload,
-  });
-  if (error) throw error;
-  const claim = (Array.isArray(data) ? data[0] : data) as Claim | undefined;
-  return claim?.should_process ? claim.id : null;
+  const [event] = await sql<{ id: string }>`
+    INSERT INTO public.reys_webhook_events AS event
+      (provider, event_key, delivery_id, raw_payload, status, attempts)
+    VALUES (${input.provider}, ${input.eventKey}, ${input.deliveryId ?? null},
+            ${JSON.stringify(input.payload)}::jsonb, 'processing', 1)
+    ON CONFLICT (provider, event_key) DO UPDATE SET status = 'processing',
+      attempts = event.attempts + 1, last_error = NULL, next_attempt_at = NULL
+    WHERE event.status = 'failed' OR (event.status = 'processing' AND event.updated_at < now() - interval '5 minutes')
+    RETURNING id
+  `;
+  return event?.id ?? null;
 }
 
 export async function completeWebhook(eventId: string) {
-  const { error } = await createInsforgeAdminClient().database.from("webhook_events").update({
-    status: "processed",
-    processed_at: new Date().toISOString(),
-    last_error: null,
-    updated_at: new Date().toISOString(),
-  }).eq("id", eventId);
-  if (error) throw error;
+  await sql`UPDATE public.reys_webhook_events SET status = 'processed', processed_at = now(), last_error = NULL WHERE id = ${eventId}`;
 }
 
 export async function failWebhook(eventId: string, error: unknown) {
   const message = error instanceof Error ? error.message.slice(0, 2000) : "Error desconocido";
-  await createInsforgeAdminClient().database.from("webhook_events").update({
-    status: "failed",
-    last_error: message,
-    next_attempt_at: new Date(Date.now() + 5 * 60_000).toISOString(),
-    updated_at: new Date().toISOString(),
-  }).eq("id", eventId);
+  try {
+    await sql`UPDATE public.reys_webhook_events SET status = 'failed', last_error = ${message},
+      next_attempt_at = now() + interval '5 minutes' WHERE id = ${eventId}`;
+  } catch (writeError) {
+    console.error("No se pudo guardar el fallo del webhook.", writeError);
+  }
 }

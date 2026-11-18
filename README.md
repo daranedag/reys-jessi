@@ -8,10 +8,12 @@ Aplicación unificada para el sitio público y su panel de administración. Est�
 ## Componentes
 
 - Next.js App Router para las páginas y el BFF.
-- InsForge para autenticación, contenido y datos operacionales.
+- Neon Postgres para contenido y reservas, y Neon Auth para el acceso al panel.
 - Cal.com Cloud como motor de disponibilidad y reservas.
 - Mercado Pago Checkout Pro para los pagos.
 - ImageKit para imágenes del sitio y adjuntos de reservas.
+
+La base de producción corresponde al proyecto `reys-jessi` en Neon. Las tablas de la aplicación usan el prefijo `reys_`.
 
 ## Desarrollo
 

@@ -1,22 +1,16 @@
 import { PageHeading } from "@/components/admin/page-heading";
-import { isInsforgeAdminConfigured } from "@/lib/env";
-import { createInsforgeAdminClient } from "@/lib/insforge/admin";
-
-async function countRows(table: string) {
-  if (!isInsforgeAdminConfigured()) return 0;
-  const { count, error } = await createInsforgeAdminClient().database
-    .from(table)
-    .select("id", { count: "exact", head: true });
-  return error ? 0 : (count ?? 0);
-}
+import { requireAdminSession } from "@/lib/admin/session";
+import { sql } from "@/lib/db";
 
 export default async function AdminDashboard() {
-  const [services, reservations, pendingPayments, content] = await Promise.all([
-    countRows("services"),
-    countRows("bookings"),
-    countRows("payments"),
-    countRows("content_revisions"),
-  ]);
+  await requireAdminSession();
+  const [{ services, reservations, pending_payments: pendingPayments, content }] = await sql<{
+    services: number; reservations: number; pending_payments: number; content: number;
+  }>`SELECT
+    (SELECT count(*)::int FROM public.reys_services) AS services,
+    (SELECT count(*)::int FROM public.reys_bookings) AS reservations,
+    (SELECT count(*)::int FROM public.reys_payments) AS pending_payments,
+    (SELECT count(*)::int FROM public.reys_content_revisions) AS content`;
   const cards = [
     ["Servicios", services, "Conectados con tipos de evento de Cal.com"],
     ["Reservas", reservations, "Historial sincronizado"],

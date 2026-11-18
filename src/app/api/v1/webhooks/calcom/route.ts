@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
 import { ApiError, apiErrorResponse } from "@/lib/api";
 import { env, requireValue } from "@/lib/env";
-import { createInsforgeAdminClient } from "@/lib/insforge/admin";
+import { sql } from "@/lib/db";
 import { claimWebhook, completeWebhook, failWebhook } from "@/lib/webhooks/inbox";
 import { verifyCalSignature } from "@/lib/webhooks/signatures";
 
@@ -24,26 +24,34 @@ export async function POST(request: Request) {
     eventId = await claimWebhook({ provider: "calcom", eventKey: `${type}:${bookingUid}:${fingerprint}`, payload: body });
     if (!eventId) return NextResponse.json({ ok: true, duplicate: true });
 
-    const client = createInsforgeAdminClient();
-    const { data: reservation, error } = await client.database.from("pre_reservations").select().eq("cal_booking_uid", bookingUid).maybeSingle();
-    if (error) throw error;
+    const [reservation] = await sql<{ id: string }>`SELECT id FROM public.reys_pre_reservations WHERE cal_booking_uid = ${bookingUid}`;
     if (!reservation) {
       await completeWebhook(eventId);
       return NextResponse.json({ ok: true, ignored: true });
     }
 
     if (["BOOKING_CANCELLED", "BOOKING_REJECTED"].includes(type)) {
-      await Promise.all([
-        client.database.from("pre_reservations").update({ status: "cancelled", cal_status: "cancelled", updated_at: new Date().toISOString() }).eq("id", reservation.id),
-        client.database.from("bookings").update({ status: "cancelled", cal_status: "cancelled", updated_at: new Date().toISOString() }).eq("pre_reservation_id", reservation.id),
-      ]);
+      await sql`WITH reservation AS (
+        UPDATE public.reys_pre_reservations SET status = 'cancelled', cal_status = 'cancelled'
+        WHERE id = ${reservation.id} RETURNING id
+      )
+      UPDATE public.reys_bookings SET status = 'cancelled', cal_status = 'cancelled'
+      WHERE pre_reservation_id IN (SELECT id FROM reservation)`;
     } else if (type === "BOOKING_RESCHEDULED") {
       const nextUid = String(payload.rescheduledToUid ?? payload.uid ?? bookingUid);
-      const patch = { cal_booking_uid: nextUid, cal_status: payload.status ?? "accepted", starts_at: payload.startTime ?? payload.start, ends_at: payload.endTime ?? payload.end, updated_at: new Date().toISOString() };
-      await Promise.all([
-        client.database.from("pre_reservations").update(patch).eq("id", reservation.id),
-        client.database.from("bookings").update({ ...patch, status: "rescheduled" }).eq("pre_reservation_id", reservation.id),
-      ]);
+      const status = typeof payload.status === "string" ? payload.status : "accepted";
+      const start = payload.startTime ?? payload.start ?? null;
+      const end = payload.endTime ?? payload.end ?? null;
+      await sql`WITH reservation AS (
+        UPDATE public.reys_pre_reservations SET cal_booking_uid = ${nextUid}, cal_status = ${status},
+          starts_at = coalesce(${start}::timestamptz, starts_at),
+          ends_at = coalesce(${end}::timestamptz, ends_at)
+        WHERE id = ${reservation.id} RETURNING id, cal_booking_uid, cal_status, starts_at, ends_at
+      )
+      UPDATE public.reys_bookings AS booking SET status = 'rescheduled',
+        cal_booking_uid = reservation.cal_booking_uid, cal_status = reservation.cal_status,
+        starts_at = reservation.starts_at, ends_at = reservation.ends_at
+      FROM reservation WHERE booking.pre_reservation_id = reservation.id`;
     }
 
     await completeWebhook(eventId);

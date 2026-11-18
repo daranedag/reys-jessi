@@ -1,13 +1,11 @@
 import { saveServiceAction } from "./actions";
 import { PageHeading } from "@/components/admin/page-heading";
-import { createInsforgeServerClient } from "@/lib/insforge/server";
+import { getServices } from "@/lib/services/repository";
 import { requireAdminSession } from "@/lib/admin/session";
 
 export default async function ServicesPage() {
   await requireAdminSession();
-  const client = await createInsforgeServerClient();
-  const { data } = await client.database.from("services").select().order("name");
-  const services = data ?? [];
+  const services = await getServices(false);
   return (
     <div>
       <PageHeading description="Cada servicio público se enlaza con un tipo de evento de Cal.com y un precio de Mercado Pago." title="Servicios" />

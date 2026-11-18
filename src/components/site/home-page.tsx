@@ -38,7 +38,7 @@ export function HomePage({ content, services }: Props) {
                   Reservar sesión
                 </a>
                 <a className="focus-ring rounded-full border border-primary/30 px-7 py-4 text-xs font-bold uppercase tracking-[0.2em] text-primary" href="#rejuvenecimiento">
-                  Ver tratamientos
+                  Conocer el enfoque
                 </a>
               </div>
             </div>
@@ -55,7 +55,7 @@ export function HomePage({ content, services }: Props) {
 
         <section className="bg-white/60 py-24" id="cronologia">
           <div className="mx-auto max-w-5xl px-6">
-            <SectionHeading eyebrow="Cronología" title="Estudios y camino de vida" />
+            <SectionHeading eyebrow="Cronología" title="Una vocación construida con el tiempo" />
             <div className="relative mt-16 grid gap-6 md:grid-cols-3">
               <div className="absolute left-[16.66%] right-[16.66%] top-5 hidden h-px bg-primary/20 md:block" />
               {content.timeline.map((item, index) => (
@@ -74,7 +74,7 @@ export function HomePage({ content, services }: Props) {
 
         <section className="py-24" id="cursos">
           <div className="mx-auto max-w-7xl px-6">
-            <SectionHeading eyebrow="Cursos y talleres realizados" title="Formación continua" body="Una trayectoria de aprendizajes que respalda cada práctica terapéutica." />
+            <SectionHeading eyebrow="Estudios y herramientas" title="Una formación amplia y continua" body="Disciplinas que Jessica ha estudiado e integrado para ampliar su mirada del bienestar y el acompañamiento." />
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {content.training.map((item) => (
                 <article className="group rounded-[2rem] border border-primary/10 bg-white p-8 shadow-sm transition hover:-translate-y-1 hover:shadow-soft" key={item.id}>
@@ -89,7 +89,7 @@ export function HomePage({ content, services }: Props) {
 
         <section className="bg-primary/5 py-24" id="nociones">
           <div className="mx-auto max-w-7xl px-6">
-            <SectionHeading eyebrow="Nociones" title="Bases que sostienen cada sesión" body="Principios integrados para acompañar procesos de sanación y rejuvenecimiento." />
+            <SectionHeading eyebrow="Nociones" title="Ideas que sostienen su manera de acompañar" body="Principios nacidos de la experiencia personal, la observación y más de dos décadas de aprendizaje." />
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {content.notions.map((item, index) => (
                 <article className="rounded-[2rem] bg-white p-8 shadow-sm" key={item.id}>
@@ -104,7 +104,7 @@ export function HomePage({ content, services }: Props) {
 
         <section className="py-24" id="experiencias">
           <div className="mx-auto max-w-7xl px-6">
-            <SectionHeading eyebrow="Experiencias de vida" title="Historias que inspiran" body="Momentos clave que moldearon una mirada holística, respetuosa y presente." />
+            <SectionHeading eyebrow="Experiencias de vida" title="Lo vivido también se vuelve servicio" body="Momentos que transformaron su búsqueda personal en una forma cercana y consciente de acompañar." />
             <div className="mt-12 grid gap-6 lg:grid-cols-3">
               {content.experiences.map((item) => (
                 <article className="rounded-[2rem] border border-secondary/20 bg-gradient-to-br from-white to-secondary/5 p-8" key={item.id}>
@@ -119,7 +119,7 @@ export function HomePage({ content, services }: Props) {
 
         <section className="bg-white py-24" id="rejuvenecimiento">
           <div className="mx-auto max-w-7xl px-6">
-            <SectionHeading eyebrow="Rejuvenecimiento" title="Trabajos faciales y corporales" body="Resultados visibles al alinear la energía interna con el cuidado externo." />
+            <SectionHeading eyebrow="Rejuvenecimiento facial" title="Una mirada integral del rostro" body="Un enfoque nacido de más de doce años observando cómo el tiempo y las experiencias se expresan en cada rostro." />
             <div className="mt-12 grid gap-7 md:grid-cols-3">
               {content.treatments.map((item) => (
                 <article className="overflow-hidden rounded-[2rem] bg-cream shadow-sm" key={item.id}>
@@ -138,7 +138,7 @@ export function HomePage({ content, services }: Props) {
 
         <section className="bg-secondary/10 py-24" id="testimonios">
           <div className="mx-auto max-w-7xl px-6">
-            <SectionHeading eyebrow="Testimonios" title="Voces de pacientes" />
+            <SectionHeading eyebrow="En primera persona" title="Palabras que resumen su camino" />
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {content.testimonials.map((item) => (
                 <figure className="rounded-[2rem] bg-white p-8 shadow-sm" key={item.id}>
@@ -156,7 +156,7 @@ export function HomePage({ content, services }: Props) {
 
         <section className="py-24" id="reflexiones">
           <div className="mx-auto max-w-7xl px-6">
-            <SectionHeading eyebrow="Reflexiones" title="Pequeños textos para el alma" />
+            <SectionHeading eyebrow="Reflexiones" title="Aprendizajes que deja el camino" />
             <div className="mt-12 grid gap-6 md:grid-cols-3">
               {content.reflections.map((item, index) => (
                 <article className={`rounded-[2rem] p-8 ${index === 1 ? "bg-primary text-white" : "bg-white shadow-sm"}`} key={item.id}>
@@ -177,7 +177,7 @@ export function HomePage({ content, services }: Props) {
             <div className="rounded-[2.5rem] bg-white p-10 shadow-soft sm:p-14">
               <p className="eyebrow">Contacto</p>
               <h2 className="section-title mt-3">Agenda tu espacio de bienestar</h2>
-              <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600">La atención es presencial y la dirección se comparte una vez confirmado el pago y la reserva.</p>
+              <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-slate-600">La atención es presencial en Santiago de Chile. La dirección se comparte una vez confirmado el pago y la reserva.</p>
               <a className="focus-ring mt-8 inline-flex rounded-full bg-primary px-7 py-4 text-xs font-bold uppercase tracking-[0.2em] text-white" href="#agendamiento">Reservar tu hora</a>
             </div>
           </div>

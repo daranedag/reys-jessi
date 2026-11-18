@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { ApiError, apiErrorResponse } from "@/lib/api";
 import { cancelCalBooking, createPendingCalBooking } from "@/lib/calcom/client";
-import { createInsforgeAdminClient } from "@/lib/insforge/admin";
+import { sql } from "@/lib/db";
+import type { PreReservationRow } from "@/lib/reservations/repository";
 import { createReservationToken } from "@/lib/security/reservation-token";
 import { getService } from "@/lib/services/repository";
 
@@ -31,27 +32,15 @@ export async function POST(request: Request) {
     const endsAt = new Date(startsAt.getTime() + service.duration_minutes * 60_000);
     const expiresAt = new Date(Date.now() + 15 * 60_000);
     const { token, hash } = createReservationToken();
-    const client = createInsforgeAdminClient();
-    const { data: inserted, error: insertError } = await client.database
-      .from("pre_reservations")
-      .insert([{
-        service_id: service.id,
-        client_name: body.client.fullName,
-        client_email: body.client.email.toLowerCase(),
-        client_phone: body.client.phone ?? null,
-        client_notes: body.client.notes ?? null,
-        form_data: {},
-        starts_at: startsAt.toISOString(),
-        ends_at: endsAt.toISOString(),
-        timezone: body.timezone,
-        status: "draft",
-        expires_at: expiresAt.toISOString(),
-        customer_token_hash: hash,
-      }])
-      .select()
-      .single();
-    if (insertError) throw insertError;
-    const savedReservationId = inserted.id as string;
+    const [{ id: savedReservationId }] = await sql<{ id: string }>`
+      INSERT INTO public.reys_pre_reservations
+        (service_id, client_name, client_email, client_phone, client_notes, starts_at, ends_at,
+         timezone, status, expires_at, customer_token_hash)
+      VALUES (${service.id}, ${body.client.fullName}, ${body.client.email.toLowerCase()},
+              ${body.client.phone ?? null}, ${body.client.notes ?? null}, ${startsAt.toISOString()},
+              ${endsAt.toISOString()}, ${body.timezone}, 'draft', ${expiresAt.toISOString()}, ${hash})
+      RETURNING id
+    `;
     preReservationId = savedReservationId;
 
     const calBooking = await createPendingCalBooking({
@@ -69,23 +58,12 @@ export async function POST(request: Request) {
       throw new ApiError(503, "calcom_event_misconfigured", "La agenda necesita activar la confirmación manual antes de recibir reservas.");
     }
 
-    const { data: updated, error: updateError } = await client.database
-      .from("pre_reservations")
-      .update({
-        status: "awaiting_payment",
-        cal_booking_uid: calBooking.uid,
-        cal_status: calBooking.status,
-        starts_at: calBooking.start,
-        ends_at: calBooking.end,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", savedReservationId)
-      .select()
-      .single();
-    if (updateError) {
-      await cancelCalBooking(calBooking.uid, "No se pudo persistir la pre-reserva");
-      throw updateError;
-    }
+    const [updated] = await sql<Pick<PreReservationRow, "id" | "status" | "starts_at" | "expires_at">>`
+      UPDATE public.reys_pre_reservations SET status = 'awaiting_payment', cal_booking_uid = ${calBooking.uid},
+        cal_status = ${calBooking.status}, starts_at = ${calBooking.start}, ends_at = ${calBooking.end}
+      WHERE id = ${savedReservationId} RETURNING id, status, starts_at, expires_at
+    `;
+    if (!updated) throw new Error("No se pudo persistir la pre-reserva");
 
     return NextResponse.json({
       data: {
@@ -101,7 +79,7 @@ export async function POST(request: Request) {
     }
     if (preReservationId) {
       try {
-        await createInsforgeAdminClient().database.from("pre_reservations").update({ status: "cancelled", updated_at: new Date().toISOString() }).eq("id", preReservationId);
+        await sql`UPDATE public.reys_pre_reservations SET status = 'cancelled' WHERE id = ${preReservationId}`;
       } catch { /* Preserve the original integration error. */ }
     }
     if (error instanceof z.ZodError) return NextResponse.json({ error: { code: "invalid_body", message: "Revisa los datos de la reserva." } }, { status: 400 });

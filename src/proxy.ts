@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { updateSession } from "@insforge/sdk/ssr";
 
 function isAdminHost(host: string) {
   const hostname = host.split(":")[0].toLowerCase();
@@ -7,7 +6,7 @@ function isAdminHost(host: string) {
   return hostname === configured || hostname.startsWith("admin.");
 }
 
-export async function proxy(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const host = request.headers.get("x-forwarded-host") ?? request.headers.get("host") ?? "";
   const url = request.nextUrl.clone();
   const adminRequest = isAdminHost(host);
@@ -23,22 +22,10 @@ export async function proxy(request: NextRequest) {
 
   if (shouldRewrite) url.pathname = `/admin${url.pathname === "/" ? "" : url.pathname}`;
 
-  const response = shouldRewrite
+  return shouldRewrite
     ? NextResponse.rewrite(url)
     : NextResponse.next({ request: { headers: request.headers } });
 
-  const baseUrl = process.env.NEXT_PUBLIC_INSFORGE_BASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY;
-  if (baseUrl && anonKey) {
-    await updateSession({
-      baseUrl,
-      anonKey,
-      requestCookies: request.cookies,
-      responseCookies: response.cookies,
-    });
-  }
-
-  return response;
 }
 
 export const config = {

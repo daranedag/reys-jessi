@@ -10,21 +10,21 @@ export function Footer() {
             <span className="font-display text-2xl font-semibold text-primary">Jessica Quiróz</span>
           </div>
           <p className="mt-4 max-w-sm text-sm leading-6 text-slate-600">
-            Sanación energética y rejuvenecimiento consciente para una vida en armonía.
+            Rejuvenecimiento facial y bienestar integral desde la escucha, la experiencia y el cuidado consciente.
           </p>
         </div>
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-ink">Navegación</p>
           <div className="mt-4 grid gap-2 text-sm text-slate-600">
             <a href="#cronologia">Camino</a>
-            <a href="#rejuvenecimiento">Tratamientos</a>
+            <a href="#rejuvenecimiento">Enfoque facial</a>
             <a href="#agendamiento">Reservar</a>
           </div>
         </div>
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-ink">Atención</p>
           <p className="mt-4 text-sm leading-6 text-slate-600">
-            Presencial · 09:00 a 17:00 hrs.
+            Santiago de Chile · 09:00 a 17:00 hrs.
             <br />La dirección se comparte al confirmar.
           </p>
         </div>

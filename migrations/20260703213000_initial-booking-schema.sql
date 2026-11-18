@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
-CREATE TABLE services (
+CREATE TABLE IF NOT EXISTS public.reys_services (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   description TEXT,
@@ -14,7 +14,7 @@ CREATE TABLE services (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE availability_rules (
+CREATE TABLE IF NOT EXISTS public.reys_availability_rules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   day_of_week INTEGER NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
   start_time TIME NOT NULL,
@@ -26,7 +26,7 @@ CREATE TABLE availability_rules (
   CHECK (start_time < end_time)
 );
 
-CREATE TABLE blackout_dates (
+CREATE TABLE IF NOT EXISTS public.reys_blackout_dates (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   starts_at TIMESTAMPTZ NOT NULL,
   ends_at TIMESTAMPTZ NOT NULL,
@@ -36,9 +36,9 @@ CREATE TABLE blackout_dates (
   CHECK (starts_at < ends_at)
 );
 
-CREATE TABLE pre_reservations (
+CREATE TABLE IF NOT EXISTS public.reys_pre_reservations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  service_id UUID NOT NULL REFERENCES services(id) ON DELETE RESTRICT,
+  service_id UUID NOT NULL REFERENCES public.reys_services(id) ON DELETE RESTRICT,
   client_name TEXT NOT NULL,
   client_email TEXT NOT NULL,
   client_phone TEXT,
@@ -57,9 +57,9 @@ CREATE TABLE pre_reservations (
   CHECK (starts_at < ends_at)
 );
 
-CREATE TABLE reservation_images (
+CREATE TABLE IF NOT EXISTS public.reys_reservation_images (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  pre_reservation_id UUID NOT NULL REFERENCES pre_reservations(id) ON DELETE CASCADE,
+  pre_reservation_id UUID NOT NULL REFERENCES public.reys_pre_reservations(id) ON DELETE CASCADE,
   imagekit_file_id TEXT NOT NULL,
   imagekit_path TEXT NOT NULL,
   url TEXT NOT NULL,
@@ -72,9 +72,9 @@ CREATE TABLE reservation_images (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE payments (
+CREATE TABLE IF NOT EXISTS public.reys_payments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  pre_reservation_id UUID NOT NULL REFERENCES pre_reservations(id) ON DELETE CASCADE,
+  pre_reservation_id UUID NOT NULL REFERENCES public.reys_pre_reservations(id) ON DELETE CASCADE,
   mercado_pago_preference_id TEXT,
   mercado_pago_payment_id TEXT,
   status TEXT NOT NULL CHECK (status IN ('created', 'pending', 'approved', 'rejected', 'cancelled', 'refunded')),
@@ -87,11 +87,11 @@ CREATE TABLE payments (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE bookings (
+CREATE TABLE IF NOT EXISTS public.reys_bookings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  pre_reservation_id UUID NOT NULL UNIQUE REFERENCES pre_reservations(id) ON DELETE RESTRICT,
-  payment_id UUID NOT NULL REFERENCES payments(id) ON DELETE RESTRICT,
-  service_id UUID NOT NULL REFERENCES services(id) ON DELETE RESTRICT,
+  pre_reservation_id UUID NOT NULL UNIQUE REFERENCES public.reys_pre_reservations(id) ON DELETE RESTRICT,
+  payment_id UUID NOT NULL REFERENCES public.reys_payments(id) ON DELETE RESTRICT,
+  service_id UUID NOT NULL REFERENCES public.reys_services(id) ON DELETE RESTRICT,
   starts_at TIMESTAMPTZ NOT NULL,
   ends_at TIMESTAMPTZ NOT NULL,
   timezone TEXT NOT NULL DEFAULT 'America/Santiago',
@@ -101,9 +101,9 @@ CREATE TABLE bookings (
   CHECK (starts_at < ends_at)
 );
 
-CREATE TABLE calendar_events (
+CREATE TABLE IF NOT EXISTS public.reys_calendar_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  booking_id UUID NOT NULL UNIQUE REFERENCES bookings(id) ON DELETE CASCADE,
+  booking_id UUID NOT NULL UNIQUE REFERENCES public.reys_bookings(id) ON DELETE CASCADE,
   google_event_id TEXT NOT NULL,
   calendar_id TEXT NOT NULL,
   html_link TEXT,
@@ -113,7 +113,7 @@ CREATE TABLE calendar_events (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE webhook_events (
+CREATE TABLE IF NOT EXISTS public.reys_webhook_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   provider TEXT NOT NULL CHECK (provider IN ('mercadopago')),
   event_key TEXT NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE webhook_events (
   UNIQUE (provider, event_key)
 );
 
-CREATE TABLE audit_logs (
+CREATE TABLE IF NOT EXISTS public.reys_audit_logs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   actor TEXT NOT NULL,
   action TEXT NOT NULL,
@@ -133,54 +133,62 @@ CREATE TABLE audit_logs (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX services_active_idx ON services(active);
-CREATE INDEX availability_rules_day_active_idx ON availability_rules(day_of_week, active);
-CREATE INDEX blackout_dates_range_idx ON blackout_dates(starts_at, ends_at);
-CREATE INDEX pre_reservations_status_range_idx ON pre_reservations(status, starts_at, ends_at);
-CREATE INDEX pre_reservations_expires_idx ON pre_reservations(expires_at);
-CREATE INDEX reservation_images_pre_reservation_idx ON reservation_images(pre_reservation_id, status);
-CREATE INDEX payments_pre_reservation_idx ON payments(pre_reservation_id, created_at DESC);
-CREATE UNIQUE INDEX payments_preference_unique_idx ON payments(mercado_pago_preference_id) WHERE mercado_pago_preference_id IS NOT NULL;
-CREATE UNIQUE INDEX payments_mp_payment_unique_idx ON payments(mercado_pago_payment_id) WHERE mercado_pago_payment_id IS NOT NULL;
-CREATE INDEX bookings_range_status_idx ON bookings(starts_at, ends_at, status);
-CREATE INDEX audit_logs_created_at_idx ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS reys_services_active_idx ON public.reys_services(active);
+CREATE INDEX IF NOT EXISTS reys_availability_rules_day_active_idx ON public.reys_availability_rules(day_of_week, active);
+CREATE INDEX IF NOT EXISTS reys_blackout_dates_range_idx ON public.reys_blackout_dates(starts_at, ends_at);
+CREATE INDEX IF NOT EXISTS reys_pre_reservations_status_range_idx ON public.reys_pre_reservations(status, starts_at, ends_at);
+CREATE INDEX IF NOT EXISTS reys_pre_reservations_expires_idx ON public.reys_pre_reservations(expires_at);
+CREATE INDEX IF NOT EXISTS reys_reservation_images_pre_reservation_idx ON public.reys_reservation_images(pre_reservation_id, status);
+CREATE INDEX IF NOT EXISTS reys_payments_pre_reservation_idx ON public.reys_payments(pre_reservation_id, created_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS reys_payments_preference_unique_idx ON public.reys_payments(mercado_pago_preference_id) WHERE mercado_pago_preference_id IS NOT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS reys_payments_mp_payment_unique_idx ON public.reys_payments(mercado_pago_payment_id) WHERE mercado_pago_payment_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS reys_bookings_range_status_idx ON public.reys_bookings(starts_at, ends_at, status);
+CREATE INDEX IF NOT EXISTS reys_audit_logs_created_at_idx ON public.reys_audit_logs(created_at DESC);
 
-CREATE TRIGGER services_updated_at
-  BEFORE UPDATE ON services
+DROP TRIGGER IF EXISTS reys_services_updated_at ON public.reys_services;
+CREATE TRIGGER reys_services_updated_at
+  BEFORE UPDATE ON public.reys_services
   FOR EACH ROW
   EXECUTE FUNCTION system.update_updated_at();
 
-CREATE TRIGGER availability_rules_updated_at
-  BEFORE UPDATE ON availability_rules
+DROP TRIGGER IF EXISTS reys_availability_rules_updated_at ON public.reys_availability_rules;
+CREATE TRIGGER reys_availability_rules_updated_at
+  BEFORE UPDATE ON public.reys_availability_rules
   FOR EACH ROW
   EXECUTE FUNCTION system.update_updated_at();
 
-CREATE TRIGGER blackout_dates_updated_at
-  BEFORE UPDATE ON blackout_dates
+DROP TRIGGER IF EXISTS reys_blackout_dates_updated_at ON public.reys_blackout_dates;
+CREATE TRIGGER reys_blackout_dates_updated_at
+  BEFORE UPDATE ON public.reys_blackout_dates
   FOR EACH ROW
   EXECUTE FUNCTION system.update_updated_at();
 
-CREATE TRIGGER pre_reservations_updated_at
-  BEFORE UPDATE ON pre_reservations
+DROP TRIGGER IF EXISTS reys_pre_reservations_updated_at ON public.reys_pre_reservations;
+CREATE TRIGGER reys_pre_reservations_updated_at
+  BEFORE UPDATE ON public.reys_pre_reservations
   FOR EACH ROW
   EXECUTE FUNCTION system.update_updated_at();
 
-CREATE TRIGGER reservation_images_updated_at
-  BEFORE UPDATE ON reservation_images
+DROP TRIGGER IF EXISTS reys_reservation_images_updated_at ON public.reys_reservation_images;
+CREATE TRIGGER reys_reservation_images_updated_at
+  BEFORE UPDATE ON public.reys_reservation_images
   FOR EACH ROW
   EXECUTE FUNCTION system.update_updated_at();
 
-CREATE TRIGGER payments_updated_at
-  BEFORE UPDATE ON payments
+DROP TRIGGER IF EXISTS reys_payments_updated_at ON public.reys_payments;
+CREATE TRIGGER reys_payments_updated_at
+  BEFORE UPDATE ON public.reys_payments
   FOR EACH ROW
   EXECUTE FUNCTION system.update_updated_at();
 
-CREATE TRIGGER bookings_updated_at
-  BEFORE UPDATE ON bookings
+DROP TRIGGER IF EXISTS reys_bookings_updated_at ON public.reys_bookings;
+CREATE TRIGGER reys_bookings_updated_at
+  BEFORE UPDATE ON public.reys_bookings
   FOR EACH ROW
   EXECUTE FUNCTION system.update_updated_at();
 
-CREATE TRIGGER calendar_events_updated_at
-  BEFORE UPDATE ON calendar_events
+DROP TRIGGER IF EXISTS reys_calendar_events_updated_at ON public.reys_calendar_events;
+CREATE TRIGGER reys_calendar_events_updated_at
+  BEFORE UPDATE ON public.reys_calendar_events
   FOR EACH ROW
   EXECUTE FUNCTION system.update_updated_at();

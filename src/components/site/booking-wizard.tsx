@@ -157,7 +157,7 @@ export function BookingWizard({ services }: Props) {
         <form className="rounded-[2rem] bg-white p-6 text-ink shadow-2xl sm:p-9" onSubmit={submit}>
           {!services.length ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
-              La interfaz de reservas está lista. Se activará al configurar InsForge y asociar cada servicio a su tipo de evento de Cal.com.
+              Actualmente Jessica ofrece rejuvenecimiento facial. La reserva en línea se activará cuando estén confirmados su duración, valor y agenda.
             </div>
           ) : null}
           <div className="grid gap-6 sm:grid-cols-2">
@@ -175,7 +175,7 @@ export function BookingWizard({ services }: Props) {
                 required
                 value={serviceId}
               >
-                {!services.length ? <option value="">Servicios pendientes de conexión</option> : null}
+                {!services.length ? <option value="">Rejuvenecimiento facial · reserva próximamente</option> : null}
                 {services.map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.name} · {item.duration_minutes} min · {money.format(item.price_amount)}
